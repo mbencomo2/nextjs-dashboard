@@ -7,6 +7,8 @@ import {
   LatestInvoiceRaw,
   User,
   Revenue,
+  Invoice,
+  Customer,
 } from './definitions';
 import clientPromise from './mongodb';
 import { formatCurrency } from './utils';
@@ -288,7 +290,7 @@ export async function fetchInvoiceById(id: string) {
       notFound();
     }
 
-    return invoice[0];
+    return invoice[0] as Invoice;
   } catch (error) {
     console.error('Database Error:', error);
     throw new Error('Failed to fetch invoice.');
@@ -317,7 +319,14 @@ export async function fetchCustomers() {
       ])
       .toArray();
 
-    return result;
+    const customers = result.map((customer) => {
+      return {
+        id: `${customer.id}`,
+        name: customer.name
+      }
+    });
+
+    return customers;
   } catch (err) {
     console.error('Database Error:', err);
     throw new Error('Failed to fetch all customers.');
