@@ -11,7 +11,7 @@ async function getUser(email: string): Promise<User | undefined> {
     const mongoClient = await clientPromise;
     const db = mongoClient.db('dashboard');
     const collection = db.collection('users');
-    const user = await collection.find({ email: email }).toArray();
+    const user: any = await collection.find({ email: email }).toArray();
 
     return user[0];
   } catch (error) {

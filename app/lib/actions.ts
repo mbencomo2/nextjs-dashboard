@@ -108,6 +108,8 @@ export async function updateInvoice(id: string, formData: FormData) {
         },
       },
     );
+
+    return formData;
   } catch (error) {
     console.log('Server Error:', error);
     return {
