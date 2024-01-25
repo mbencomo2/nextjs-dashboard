@@ -1,14 +1,6 @@
 import { ObjectId } from 'mongodb';
 import {
-  CustomerField,
-  CustomersTableType,
-  InvoiceForm,
-  InvoicesTable,
-  LatestInvoiceRaw,
-  User,
-  Revenue,
   Invoice,
-  Customer,
 } from './definitions';
 import clientPromise from './mongodb';
 import { formatCurrency } from './utils';
@@ -24,9 +16,14 @@ export async function fetchRevenue() {
     const mongoClient = await clientPromise;
     const db = mongoClient.db('dashboard');
     const collection = db.collection('revenue');
-    const result = await collection.find({}).toArray();
+    const result = await collection.find({}).project({ month: 1, revenue: 1 }).toArray();
 
-    return result;
+    const revenue = result.map((m) => ({
+      month: m.month,
+      revenue: m.revenue
+    }));
+
+    return revenue;
   } catch (error) {
     console.error('Database Error:', error);
     throw new Error('Failed to fetch revenue data.');
