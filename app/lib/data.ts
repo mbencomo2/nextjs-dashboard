@@ -20,8 +20,8 @@ export async function fetchRevenue() {
 
   try {
     const mongoClient = await clientPromise;
-    const db = mongoClient.db("dashboard");
-    const collection = db.collection("revenue");
+    const db = mongoClient.db('dashboard');
+    const collection = db.collection('revenue');
     const result = await collection.find({}).toArray();
 
     return result;
@@ -35,37 +35,37 @@ export async function fetchLatestInvoices() {
   noStore();
   try {
     const mongoClient = await clientPromise;
-    const db = mongoClient.db("dashboard");
-    const collection = db.collection("invoices");
+    const db = mongoClient.db('dashboard');
+    const collection = db.collection('invoices');
     const result = await collection.aggregate([
       {
         $lookup: {
-          from: "customers",
-          localField: "customer_id",
-          foreignField: "id",
-          as: "customer"
-        }
+          from: 'customers',
+          localField: 'customer_id',
+          foreignField: 'id',
+          as: 'customer',
+        },
       },
       {
-        $unwind: "$customer"
+        $unwind: '$customer',
       },
       {
         $project: {
-          "amount": "$amount",
-          "name": "$customer.name",
-          "image_url": "$customer.image_url",
-          "email": "$customer.email",
-          "id": "$_id"
-        }
+          amount: '$amount',
+          name: '$customer.name',
+          image_url: '$customer.image_url',
+          email: '$customer.email',
+          id: '$_id',
+        },
       },
       {
         $sort: {
-          "date": -1
-        }
+          date: -1,
+        },
       },
       {
-        $limit: 5
-      }
+        $limit: 5,
+      },
     ]);
     const data = await result.toArray();
 
@@ -84,37 +84,39 @@ export async function fetchCardData() {
   noStore();
   try {
     const mongoClient = await clientPromise;
-    const db = mongoClient.db("dashboard");
-    const invoices = db.collection("invoices");
-    const customers = db.collection("customers");
+    const db = mongoClient.db('dashboard');
+    const invoices = db.collection('invoices');
+    const customers = db.collection('customers');
 
     const invoiceCountPromise = invoices.countDocuments({});
     const customerCountPromise = customers.countDocuments({});
-    const invoiceStatusPromise = invoices.aggregate([
-      {
-        $group: {
-          _id: null,
-          paid: {
-            $sum: {
-              $cond: {
-                if: { $eq: ["$status", "paid"] },
-                then: "$amount",
-                else: 0
-              }
-            }
+    const invoiceStatusPromise = invoices
+      .aggregate([
+        {
+          $group: {
+            _id: null,
+            paid: {
+              $sum: {
+                $cond: {
+                  if: { $eq: ['$status', 'paid'] },
+                  then: '$amount',
+                  else: 0,
+                },
+              },
+            },
+            pending: {
+              $sum: {
+                $cond: {
+                  if: { $eq: ['$status', 'pending'] },
+                  then: '$amount',
+                  else: 0,
+                },
+              },
+            },
           },
-          pending: {
-            $sum: {
-              $cond: {
-                if: { $eq: ["$status", "pending"] },
-                then: "$amount",
-                else: 0
-              }
-            }
-          }
-        }
-      }
-    ]).toArray();
+        },
+      ])
+      .toArray();
 
     const data = await Promise.all([
       invoiceCountPromise,
@@ -149,54 +151,56 @@ export async function fetchFilteredInvoices(
 
   try {
     const mongoClient = await clientPromise;
-    const db = mongoClient.db("dashboard");
-    const collection = db.collection("invoices");
-    const result = collection.aggregate([
-      {
-        $lookup: {
-          from: "customers",
-          localField: "customer_id",
-          foreignField: "id",
-          as: "customer"
-        }
-      },
-      {
-        $unwind: "$customer"
-      },
-      {
-        $match: {
-          $or: [
-            { "customer.name": { $regex: new RegExp(query, 'i') } },
-            { "customer.email": { $regex: new RegExp(query, 'i') } },
-            { "amount": { $regex: new RegExp(query, 'i') } },
-            { "date": { $regex: new RegExp(query, 'i') } },
-            { "status": { $regex: new RegExp(query, 'i') } }
-          ]
-        }
-      },
-      {
-        $project: {
-          "id": "$id",
-          "amount": "$amount",
-          "date": "$date",
-          "status": "$status",
-          "name": "$customer.name",
-          "email": "$customer.email",
-          "image_url": "$customer.image_url"
-        }
-      },
-      {
-        $sort: {
-          "date": -1
-        }
-      },
-      {
-        $skip: offset
-      },
-      {
-        $limit: ITEMS_PER_PAGE
-      }
-    ]).toArray();
+    const db = mongoClient.db('dashboard');
+    const collection = db.collection('invoices');
+    const result = collection
+      .aggregate([
+        {
+          $lookup: {
+            from: 'customers',
+            localField: 'customer_id',
+            foreignField: 'id',
+            as: 'customer',
+          },
+        },
+        {
+          $unwind: '$customer',
+        },
+        {
+          $match: {
+            $or: [
+              { 'customer.name': { $regex: new RegExp(query, 'i') } },
+              { 'customer.email': { $regex: new RegExp(query, 'i') } },
+              { amount: { $regex: new RegExp(query, 'i') } },
+              { date: { $regex: new RegExp(query, 'i') } },
+              { status: { $regex: new RegExp(query, 'i') } },
+            ],
+          },
+        },
+        {
+          $project: {
+            id: '$id',
+            amount: '$amount',
+            date: '$date',
+            status: '$status',
+            name: '$customer.name',
+            email: '$customer.email',
+            image_url: '$customer.image_url',
+          },
+        },
+        {
+          $sort: {
+            date: -1,
+          },
+        },
+        {
+          $skip: offset,
+        },
+        {
+          $limit: ITEMS_PER_PAGE,
+        },
+      ])
+      .toArray();
 
     return result;
   } catch (error) {
@@ -209,35 +213,37 @@ export async function fetchInvoicesPages(query: string) {
   noStore();
   try {
     const mongoClient = await clientPromise;
-    const db = mongoClient.db("dashboard");
-    const collection = db.collection("invoices");
-    const result = await collection.aggregate([
-      {
-        $lookup: {
-          from: "customers",
-          localField: "customer_id",
-          foreignField: "id",
-          as: "customer"
-        }
-      },
-      {
-        $unwind: "$customer"
-      },
-      {
-        $match: {
-          $or: [
-            { "customer.name": { $regex: new RegExp(query, 'i') } },
-            { "customer.email": { $regex: new RegExp(query, 'i') } },
-            { "amount": { $regex: new RegExp(query, 'i') } },
-            { "date": { $regex: new RegExp(query, 'i') } },
-            { "status": { $regex: new RegExp(query, 'i') } }
-          ]
-        }
-      },
-      {
-        $count: "total"
-      }
-    ]).toArray();
+    const db = mongoClient.db('dashboard');
+    const collection = db.collection('invoices');
+    const result = await collection
+      .aggregate([
+        {
+          $lookup: {
+            from: 'customers',
+            localField: 'customer_id',
+            foreignField: 'id',
+            as: 'customer',
+          },
+        },
+        {
+          $unwind: '$customer',
+        },
+        {
+          $match: {
+            $or: [
+              { 'customer.name': { $regex: new RegExp(query, 'i') } },
+              { 'customer.email': { $regex: new RegExp(query, 'i') } },
+              { amount: { $regex: new RegExp(query, 'i') } },
+              { date: { $regex: new RegExp(query, 'i') } },
+              { status: { $regex: new RegExp(query, 'i') } },
+            ],
+          },
+        },
+        {
+          $count: 'total',
+        },
+      ])
+      .toArray();
 
     const totalPages = Math.ceil(Number(result[0].total) / ITEMS_PER_PAGE);
     return totalPages;
@@ -252,23 +258,25 @@ export async function fetchInvoiceById(id: string) {
   const invoiceId = new ObjectId(id);
   try {
     const mongoClient = await clientPromise;
-    const db = mongoClient.db("dashboard");
-    const collection = db.collection("invoices");
-    const result = await collection.aggregate([
-      {
-        $match: {
-          "_id": invoiceId
-        }
-      },
-      {
-        $project: {
-          "id": "$id",
-          "customer_id": "$customer_id",
-          "amount": "$amount",
-          "status": "$status"
-        }
-      }
-    ]).toArray();
+    const db = mongoClient.db('dashboard');
+    const collection = db.collection('invoices');
+    const result = await collection
+      .aggregate([
+        {
+          $match: {
+            _id: invoiceId,
+          },
+        },
+        {
+          $project: {
+            id: '$id',
+            customer_id: '$customer_id',
+            amount: '$amount',
+            status: '$status',
+          },
+        },
+      ])
+      .toArray();
 
     const invoice = result.map((invoice) => ({
       ...invoice,
@@ -291,21 +299,23 @@ export async function fetchCustomers() {
   noStore();
   try {
     const mongoClient = await clientPromise;
-    const db = mongoClient.db("dashboard");
-    const collection = db.collection("customers");
-    const result = await collection.aggregate([
-      {
-        $project: {
-          "id": "$id",
-          "name": "$name"
-        }
-      },
-      {
-        $sort: {
-          "name": 1
-        }
-      }
-    ]).toArray();
+    const db = mongoClient.db('dashboard');
+    const collection = db.collection('customers');
+    const result = await collection
+      .aggregate([
+        {
+          $project: {
+            id: '$id',
+            name: '$name',
+          },
+        },
+        {
+          $sort: {
+            name: 1,
+          },
+        },
+      ])
+      .toArray();
 
     return result;
   } catch (err) {
@@ -318,72 +328,74 @@ export async function fetchFilteredCustomers(query: string) {
   noStore();
   try {
     const mongoClient = await clientPromise;
-    const db = mongoClient.db("dashboard");
-    const collection = db.collection("customers");
-    const result = await collection.aggregate([
-      {
-        $lookup: {
-          from: "invoices",
-          localField: "id",
-          foreignField: "customer_id",
-          as: "invoices"
-        }
-      },
-      {
-        $match: {
-          $or: [
-            { "name": { $regex: new RegExp(query, 'i') } },
-            { "email": { $regex: new RegExp(query, 'i') } }
-          ]
-        }
-      },
-      {
-        $group: {
-          _id: {
-            id: "$id",
-            name: "$name",
-            email: "$email",
-            image_url: "$image_url"
+    const db = mongoClient.db('dashboard');
+    const collection = db.collection('customers');
+    const result = await collection
+      .aggregate([
+        {
+          $lookup: {
+            from: 'invoices',
+            localField: 'id',
+            foreignField: 'customer_id',
+            as: 'invoices',
           },
-          total_invoices: { $sum: 1 },
-          total_pending: {
-            $sum: {
-              $cond: {
-                if: { $eq: ["$invoices.status", "pending"] },
-                then: "$invoices.amount",
-                else: 0
-              }
-            }
+        },
+        {
+          $match: {
+            $or: [
+              { name: { $regex: new RegExp(query, 'i') } },
+              { email: { $regex: new RegExp(query, 'i') } },
+            ],
           },
-          total_paid: {
-            $sum: {
-              $cond: {
-                if: { $eq: ["$invoices.status", "paid"] },
-                then: "$invoices.amount",
-                else: 0
-              }
-            }
-          }
-        }
-      },
-      {
-        $project: {
-          "_id": 0,
-          "id": "$_id.id",
-          "name": "$_id.name",
-          "email": "$_id.email",
-          "image_url": "$_id.image_url",
-          "total_invoices": "$total_invoices",
-          "total_pending": "$total_pending",
-          "total_paid": "$total_paid"
-        }
-      },
-      {
-        $sort: {
-          "name": 1
-        }
-      }
-    ]).toArray();
+        },
+        {
+          $group: {
+            _id: {
+              id: '$id',
+              name: '$name',
+              email: '$email',
+              image_url: '$image_url',
+            },
+            total_invoices: { $sum: 1 },
+            total_pending: {
+              $sum: {
+                $cond: {
+                  if: { $eq: ['$invoices.status', 'pending'] },
+                  then: '$invoices.amount',
+                  else: 0,
+                },
+              },
+            },
+            total_paid: {
+              $sum: {
+                $cond: {
+                  if: { $eq: ['$invoices.status', 'paid'] },
+                  then: '$invoices.amount',
+                  else: 0,
+                },
+              },
+            },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            id: '$_id.id',
+            name: '$_id.name',
+            email: '$_id.email',
+            image_url: '$_id.image_url',
+            total_invoices: '$total_invoices',
+            total_pending: '$total_pending',
+            total_paid: '$total_paid',
+          },
+        },
+        {
+          $sort: {
+            name: 1,
+          },
+        },
+      ])
+      .toArray();
 
     const customers = result.map((customer) => ({
       ...customer,
@@ -402,9 +414,9 @@ export async function getUser(email: string) {
   noStore();
   try {
     const mongoClient = await clientPromise;
-    const db = mongoClient.db("dashboard");
-    const collection = db.collection("users");
-    const result = await collection.find({ "email": email }).toArray();
+    const db = mongoClient.db('dashboard');
+    const collection = db.collection('users');
+    const result = await collection.find({ email: email }).toArray();
     return result[0];
   } catch (error) {
     console.error('Failed to fetch user:', error);
